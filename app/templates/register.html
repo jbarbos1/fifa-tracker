@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Register</h1>
+
+{% if error %}
+  <p class="error-message">{{ error}} </p>
+{% endif %}
+
+<form method="Post" action="{{ url_for('main.register') }}">
+
+  <label>Email</label>
+  <input type="email"
+         name="email"
+         placeholder="Email"
+         required
+         class="form-input"
+  >
+
+  <label>Username</label>
+  <input type="text"
+         name="username"
+         placeholder="Optional username"
+  >
+
+  <label>Password</label>
+  <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          class="form-input"
+          required
+  >
+
+  <label>Confirm Password</label>
+  <input
+          type="password"
+          name="confirm_password"
+          placeholder="Confirm Password"
+          class="form-input"
+          required
+  >
+
+  <button type="submit">Register</button>
+
+</form>
+{% endblock %}
+
