@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Manage Team — FIFA Tracker{% endblock %}
+
+{% block content %}
+<h1 class="page-title">My <span class="text-amber">Team</span></h1>
+<p class="page-subtitle">{{ member.username }}'s squad</p>
+
+{% if not member.league %}
+  <div class="empty-state">
+    <div class="empty-state__icon">⚽</div>
+    <p class="empty-state__text">Join a league to manage your team.</p>
+    <a href="{{ url_for('main.find_league') }}" class="btn btn--green btn--sm mt-2">Find a League</a>
+  </div>
+{% else %}
+  <p class="text-muted">Team management coming soon for <span class="text-amber">{{ member.league.name }}</span>.</p>
+{% endif %}
+{% endblock %}

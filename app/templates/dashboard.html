@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FIFA Tracker{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+<p class="page-subtitle">welcome back, {{ member.username }}</p>
+
+<div class="stat-row">
+  <div class="stat-chip">
+    <div class="stat-chip__label">League</div>
+    <div class="stat-chip__value" style="font-size:1rem; padding-top:0.2rem;">
+      {% if member.league %}
+        {{ member.league.name }}
+      {% else %}
+        <span style="color:var(--text-dim)">None</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+{% if not member.league %}
+  <p class="text-muted">You're not in a league yet.</p>
+  <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+    <a href="{{ url_for('main.find_league') }}" class="btn btn--green btn--sm">Find a League</a>
+    <a href="{{ url_for('main.create_league') }}" class="btn btn--outline btn--sm">Create League</a>
+  </div>
+{% else %}
+  <p class="text-muted">You're in <span class="text-amber">{{ member.league.name }}</span>.</p>
+  <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+    <a href="{{ url_for('main.manage_team') }}" class="btn btn--green btn--sm">Manage Team</a>
+    <form method="POST" action="{{ url_for('main.leave_league') }}" style="display:inline;">
+      <button type="submit" class="btn btn--danger btn--sm">Leave League</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}

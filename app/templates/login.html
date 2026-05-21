@@ -1,23 +1,45 @@
 {% extends "base.html" %}
+{% block title %}Login — FIFA Tracker{% endblock %}
 
 {% block content %}
-<h1>Login</h1>
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <h1 class="auth-title">Sign <span>In</span></h1>
+    <p class="auth-sub">Enter your credentials</p>
 
-<form method="POST" action="{{ url_for('main.login')}} ">
-    <label>Username</label>
-    <input type="text"
-           name="username"
-           placeholder="Username"
-           class="form-input"
-           required
-    >
-    <label>Password</label>
-    <input type="password"
-           name="password"
-           placeholder="Password"
-           class="form-input"
-           required>
-    <button type="submit">Login</button>
-</form>
+    <form method="POST" action="{{ url_for('main.login') }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username or Email</label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          placeholder="manager@club.com"
+          class="form-input"
+          autocomplete="username"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          name="password"
+          placeholder="••••••••"
+          class="form-input"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn--primary">Login →</button>
+    </form>
+
+    <p class="auth-footer">
+      No account? <a href="{{ url_for('main.register') }}">Register here</a>
+    </p>
+  </div>
+</div>
 {% endblock %}
-

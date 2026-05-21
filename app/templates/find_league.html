@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Find League — FIFA Tracker{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Find a <span class="text-amber">League</span></h1>
+<p class="page-subtitle">browse available leagues or create your own</p>
+
+<div style="display:flex; gap:0.75rem; margin-bottom:1.5rem;">
+  <a href="{{ url_for('main.search_league') }}" class="btn btn--outline btn--sm">🔍 Search by Name</a>
+  <a href="{{ url_for('main.create_league') }}" class="btn btn--green btn--sm">＋ Create League</a>
+</div>
+
+{% if leagues %}
+  <div class="league-grid">
+    {% for league in leagues %}
+      <div class="league-card">
+        <div class="league-card__name">{{ league.name }}</div>
+        <div class="league-card__meta">{{ league.members | length }} member{{ 's' if league.members | length != 1 }}</div>
+        <div class="league-card__actions">
+          <form method="POST" action="{{ url_for('main.join_league', league_id=league.id) }}">
+            <button type="submit" class="btn btn--green btn--sm" style="width:100%;">
+              Join →
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">🏟️</div>
+    <p class="empty-state__text">No leagues available yet.</p>
+    <a href="{{ url_for('main.create_league') }}" class="btn btn--green btn--sm mt-2">Be the first — Create one</a>
+  </div>
+{% endif %}
+{% endblock %}

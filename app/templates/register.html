@@ -9,7 +9,7 @@
 {% endif %}
 
 <form method="Post" action="{{ url_for('main.register') }}">
-
+  {{ form.hidden_tag() }}
   <label>Email</label>
   <input type="email"
          name="email"

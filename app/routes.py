@@ -1,10 +1,31 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from werkzeug.security import generate_password_hash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
-from app.models import LeagueMember
-
+from app.models import LeagueMember, League
+from functools import wraps
+from app.forms import RegistrationForm, LoginForms, LeagueCreateForm
 
 main = Blueprint('main', __name__)
+
+
+def get_current_member():
+    """Return the logged-in LeagueMember or None."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return LeagueMember.query.get(user_id)
+
+
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('user_id'):
+            flash('Please log in first', 'Warning')
+            return redirect(url_for('main.login'))
+        return f(*args, **kwargs)
+
+    return decorated
 
 
 @main.route('/')  # Create route for homepage
@@ -17,62 +38,196 @@ def about():
     return render_template('about.html')
 
 
-@main.route('/login')
+# --------------
+# Login
+# --------------
+@main.route('/login', methods=['GET', 'POST'])
 def login():
-    return render_template('login.html')
+    # If already logged in, redirect to dash
+    if 'user_id' in session:
+        return redirect(url_for('main.dashboard'))
+    form = LoginForms()
+
+    if form.validate_on_submit():
+        identifier = form.identifier.data.strip()
+        password = form.password.data
+        # Query db for uname or email
+        member = (
+                LeagueMember.query.filter_by(username=identifier).first()
+                or LeagueMember.query.filter_by(email=identifier.lower()).first()
+        )
+
+        # Validating password and prevent user-enumeration
+        if member and check_password_hash(member.password_hash, password):
+            # Regenerate session ID to prevent session fixation
+            session['user_id'] = member.id
+            flash(f"Welcome back, {member.username}!", 'success')
+            return redirect(url_for('main.dashboard'))
+        # Generic error message avoid disclosing which account exist
+        flash('Invalid credentials. Please try again.', 'error')
+        return redirect(url_for('main.login'))
+    return render_template('login.html', form=form)
 
 
+@main.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('main.home'))
+
+
+# -------------
+# Registration
+# -------------
 @main.route('/register', methods=["GET", "POST"])
 def register():
-    if request.method == "POST":
-        email = request.form.get('email', '').strip().lower()
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+    form = RegistrationForm()
 
-        if not email:
-            flash('Email is required.', 'error')  # review syntax of flash
-            return redirect(url_for('main.register'))  # Why is main referenced when it is blueprint
+    # Triggers only when user slicks submit and data is valid
+    if form.validate_on_submit():
+        email = form.email.data.strip().lower()
+        password = form.password.data
 
-        if password != confirm_password:
-            flash('Passwords do not match', 'error')
-            return redirect(url_for('main.register'))
-
-        if LeagueMember.query.filter_by(email=email).first():
-            flash('Email is already registered.', 'error')
-            return redirect(url_for('main.register'))
-
-        if username:
-            existing_username = LeagueMember.query.filter_by(username=username).first()
-            if existing_username:
-                flash('Username is already taken.', 'error')
-                return redirect(url_for('main.register'))
-
-        password_hash = generate_password_hash(password)
+        username = form.username.data.strip() if form.username.data else email.split('@')[0]
 
         new_user = LeagueMember(
             email=email,
-            username=username if username else 'temp_username',
-            password_hash=password_hash,
-            league_id=None
+            username=username,
+            password_hash=generate_password_hash(password),
+            league_id=None  # Does python already do this once you create instance
         )
 
         db.session.add(new_user)
-        db.session.flush()  # gives new_user its primary key before commit
+        # db.session.flush()  # gives new_user its primary key before commit
 
-        if not username:
-            email_prefix = email.split('@')[0]
-            generated_username = f'{email_prefix}_{new_user.id}'
-            new_user.username = generated_username
         try:
             db.session.commit()
-            flash('Registration successful. Please log in.', 'success')
-            return redirect(url_for('main.login'))
+            session['user_id'] = new_user.id
+            flash(f"Welcome, {new_user.username}", 'success')
+            return redirect(url_for('main.dashboard'))  # new repo
         except Exception as e:
             db.session.rollback()
-            print(e) #debugging
+            print(e)  # debugging
             flash('An unexpected error occurred', 'error')
-        finally:
             return redirect(url_for('main.login'))
+    # Triggers if the user submitted invalid data
+    elif request.method == 'POST':
+        flash('Invalid form submission', 'error')
+    return render_template('register.html', form=form)
 
-    return render_template('register.html')
+
+# --------------------
+# Logged in template
+# --------------------
+# Dashboard
+# ---------------------
+@main.route('/dashboard')
+@login_required
+def dashboard():
+    member = get_current_member()
+    return render_template('dashboard.html', member=member)
+
+
+# -------------------
+# League (Create/find/search)
+# -------------------
+
+@main.route('/league/create', methods=['GET', 'POST'])
+@login_required
+def create_league():
+    member = get_current_member()
+
+    # Check if they already have league
+    if member.league_id is not None:
+        flash('You may not create league while in league. Must leave current league.')
+        return redirect(url_for('main.dashboard'))  # may need to change link
+    form = LeagueCreateForm()
+
+    # validate on submit handles both checking for POST and running all validators
+    if form.validate_on_submit():
+        league = League(name=form.name.data.strip())
+        db.session.add(league)
+        db.session.flush()
+
+        member.league_id = league.id
+
+        try:
+            db.session.commit()
+            flash(f"League {league.name} created and you''ve been added!", 'success')
+            return redirect(url_for('main.dashboard'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('An unexpected error occurred. Try again later.', 'error')
+            return redirect(url_for('main.dashboard'))
+    return render_template('create_league.html', member=member, form=form)
+
+
+@main.route("/league/find")
+@login_required
+def find_league():
+    """Show all leagues the current member is NOT already in."""
+    member = get_current_member()
+    leagues = League.query.filter(League.id != member.league_id).all() if member.league_id else League.query.all()
+    return render_template("find_league.html", leagues=leagues, member=member)
+
+
+@main.route("/league/search")
+@login_required
+def search_league():
+    member = get_current_member()
+    query = request.args.get("q", "").strip()
+
+    # 1. Start with a base query that excludes the user's current league
+    # (Just like your /find logic)
+    base_query = League.query
+    if member.league_id:
+        base_query = base_query.filter(League.id != member.league_id)
+
+    # 2. Apply the search filter only if a query exists
+    if query:
+        leagues = base_query.filter(League.name.ilike(f"%{query}%")).all()
+    else:
+        leagues = base_query.all()
+
+    # If this is purely for AJAX, you might eventually point this to a
+    # template that ONLY contains the list items, rather than a full page.
+    return render_template("search_league.html", leagues=leagues, query=query, member=member)
+
+
+@main.route("/league/join/<uuid:league_id>", methods=["POST"])
+@login_required
+def join_league(league_id):
+    member = get_current_member()
+    league = League.query.get_or_404(league_id)
+
+    if member.league_id == league.id:
+        flash("You are already in this league.", "info")
+        return redirect(url_for("main.find_league"))
+
+    member.league_id = league.id
+    db.session.commit()
+    flash(f'You joined "{league.name}"!', "success")
+    return redirect(url_for("main.dashboard"))
+
+
+@main.route("/league/leave", methods=["POST"])
+@login_required
+def leave_league():
+    member = get_current_member()
+    if member.league_id:
+        member.league_id = None
+        db.session.commit()
+        flash("You have left your league.", "info")
+    return redirect(url_for("main.dashboard"))
+
+
+# ──────────────────────────────────────────
+# Manage team (stub — extend as needed)
+# ──────────────────────────────────────────
+
+@main.route("/team/manage")
+@login_required
+def manage_team():
+    member = get_current_member()
+    return render_template("manage_team.html", member=member)

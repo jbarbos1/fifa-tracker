@@ -8,6 +8,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
+{% if session.get("user_id") %}
+<nav>
+    <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('main.find_league') }}">Find League</a>
+    <a href="{{ url_for('main.search_league') }}">Search League</a>
+    <a href="{{ url_for('main.manage_team') }}">Manage Team</a>
+    <a href="{{ url_for('main.logout') }}">Logout</a>
+</nav>
+{% else %}
+
+{% endif %}
+
 <body>
 
 <nav>
