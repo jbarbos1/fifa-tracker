@@ -32,3 +32,12 @@ class LeagueMember(db.Model):
 
     def __repr__(self):
         return f"<LeagueMember {self.username}>"
+
+
+class UsageSnapshot(db.Model):
+    __tablename__ = 'usage_snapshots'
+
+    id = db.Column(db.Integer, primary_key=True)
+    total_users = db.Column(db.Integer, nullable=False)
+    active_sessions = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, nullable=False)

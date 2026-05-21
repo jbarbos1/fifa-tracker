@@ -21,4 +21,10 @@ def create_app():
     from . import models
     app.register_blueprint(main)
 
+    from .admin_routes import admin
+    app.register_blueprint(admin, url_prefix='/admin')
+
+    from app.jobs.scheduler import start_jobs
+    start_jobs(app)
+
     return app
