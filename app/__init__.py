@@ -17,6 +17,14 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_size": 5,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+        "pool_recycle": 1800,
+        "pool_pre_ing": True,
+    }
+
     from .routes import main
     from . import models
     app.register_blueprint(main)

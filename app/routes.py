@@ -4,6 +4,7 @@ from app import db
 from app.models import LeagueMember, League
 from functools import wraps
 from app.forms import RegistrationForm, LoginForms, LeagueCreateForm
+from app.db_manager import DBManager
 
 main = Blueprint('main', __name__)
 
@@ -85,30 +86,32 @@ def register():
 
     # Triggers only when user slicks submit and data is valid
     if form.validate_on_submit():
-        email = form.email.data.strip().lower()
-        password = form.password.data
 
-        username = form.username.data.strip() if form.username.data else email.split('@')[0]
+        def create_user_transaction(db_session):
+            email = form.email.data.strip().lower()
+            password = form.password.data
 
-        new_user = LeagueMember(
-            email=email,
-            username=username,
-            password_hash=generate_password_hash(password),
-            league_id=None  # Does python already do this once you create instance
-        )
+            username = form.username.data.strip() if form.username.data else email.split('@')[0]
 
-        db.session.add(new_user)
+            new_user = LeagueMember(
+                email=email,
+                username=username,
+                password_hash=generate_password_hash(password),
+                league_id=None  # Does python already do this once you create instance
+            )
+
+            db_session.add(new_user)
+            db_session.flush()
+            return (new_user)
+
         # db.session.flush()  # gives new_user its primary key before commit
-
-        try:
-            db.session.commit()
-            session['user_id'] = new_user.id
-            flash(f"Welcome, {new_user.username}", 'success')
-            return redirect(url_for('main.dashboard'))  # new repo
-        except Exception as e:
-            db.session.rollback()
-            print(e)  # debugging
-            flash('An unexpected error occurred', 'error')
+        success, result = DBManager.execute_transaction(create_user_transaction)
+        if success:
+            session['user_id'] = result.id
+            flash('Account created successfully', 'success')
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash(f"Registration failed: Database error occurred.")
             return redirect(url_for('main.login'))
     # Triggers if the user submitted invalid data
     elif request.method == 'POST':
@@ -145,20 +148,21 @@ def create_league():
 
     # validate on submit handles both checking for POST and running all validators
     if form.validate_on_submit():
-        league = League(name=form.name.data.strip())
-        db.session.add(league)
-        db.session.flush()
 
-        member.league_id = league.id
+        def create_league_transaction(db_session):
+            league = League(name=form.name.data.strip())
+            db_session.add(league)
+            db_session.flush()
+            member.league_id = league.id
 
-        try:
-            db.session.commit()
-            flash(f"League {league.name} created and you''ve been added!", 'success')
+            return league
+
+        success, result = DBManager.execute_transaction(create_league_transaction)
+        if success:
+            flash(f"League {result.name} created and you were added.", 'success')
             return redirect(url_for('main.dashboard'))
-
-        except Exception as e:
-            db.session.rollback()
-            flash('An unexpected error occurred. Try again later.', 'error')
+        else:
+            flash('Unexpected error occurred. Try again later.', 'error')
             return redirect(url_for('main.dashboard'))
     return render_template('create_league.html', member=member, form=form)
 
@@ -205,9 +209,17 @@ def join_league(league_id):
         flash("You are already in this league.", "info")
         return redirect(url_for("main.find_league"))
 
-    member.league_id = league.id
-    db.session.commit()
-    flash(f'You joined "{league.name}"!', "success")
+    def join_league_transaction(db_session):
+        member.league_id = league.id
+        return member
+
+    success, result = DBManager.execute_transaction(join_league_transaction)
+    if success:
+        # member.league_id = league.id
+        # db.session.commit()
+        flash(f'You joined "{league.name}"!', "success")
+    else:
+        flash('An unexpected error occurred. Try again later', 'error')
     return redirect(url_for("main.dashboard"))
 
 
@@ -216,9 +228,13 @@ def join_league(league_id):
 def leave_league():
     member = get_current_member()
     if member.league_id:
-        member.league_id = None
-        db.session.commit()
-        flash("You have left your league.", "info")
+        def leave_league_transaction(db_session):
+            member.league_id = None
+            return member
+
+        success, result = DBManager.execute_transaction(leave_league_transaction)
+        if success:
+            flash("You have left your league.", "info")
     return redirect(url_for("main.dashboard"))
 
 
