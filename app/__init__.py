@@ -1,38 +1,58 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
-from flask_migrate import Migrate
 import os
 
-db = SQLAlchemy()
+from dotenv import load_dotenv
+from flask import Flask
+
+from app.extensions import db, migrate
+
 load_dotenv()
-migrate = Migrate()
 
 
-def create_app():
+def create_app() -> Flask:
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # ------------------------------------------------------------------ #
+    # Config
+    # ------------------------------------------------------------------ #
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-me-in-production")
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///graham.db")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 1800,
+    }
+
+    # ------------------------------------------------------------------ #
+    # Extensions
+    # ------------------------------------------------------------------ #
     db.init_app(app)
     migrate.init_app(app, db)
 
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "pool_size": 5,
-        "max_overflow": 20,
-        "pool_timeout": 30,
-        "pool_recycle": 1800,
-        "pool_pre_ing": True,
-    }
+    # ------------------------------------------------------------------ #
+    # Models
+    # ------------------------------------------------------------------ #
+    from app import models  # noqa: F401
+    from app import models  # noqa: F401
 
-    from .routes import main
-    from . import models
+    # ------------------------------------------------------------------ #
+    # Blueprints
+    # ------------------------------------------------------------------ #
+    from app.routes import main
     app.register_blueprint(main)
 
-    from .admin_routes import admin
-    app.register_blueprint(admin, url_prefix='/admin')
+    # Optional admin routes
+    try:
+        from app.admin_routes import admin
+        app.register_blueprint(admin, url_prefix="/admin")
+    except ImportError:
+        pass
 
-    from app.jobs.scheduler import start_jobs
-    start_jobs(app)
+    # Optional background jobs
+    try:
+        from app.jobs.scheduler import start_jobs
+        start_jobs(app)
+    except ImportError:
+        pass
 
     return app

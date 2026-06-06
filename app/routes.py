@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
-from app.models import LeagueMember, League
 from functools import wraps
 from app.forms import RegistrationForm, LoginForms, LeagueCreateForm
 from app.db_manager import DBManager

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Core Financial Statement UML Diagram</title>
+
+<style>
+body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.mermaid {
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Core Financial Statement</h1>
+
+<div class="mermaid">
+
+classDiagram
+
+class Security {
+    UUID id
+    string ticker
+    string name
+    string exchange
+    string sector
+    string industry
+    string security_type
+    date ipo_date
+    bool is_active
+}
+
+class FinancialReport {
+    UUID id
+    UUID security_id
+    string report_type
+    date period_end
+    date filed_date
+    string fiscal_year
+    string fiscal_quarter
+}
+
+class BalanceSheet {
+    UUID id
+    UUID report_id
+    Decimal total_assets
+    Decimal total_liabilities
+    Decimal total_equity
+    Decimal ncav
+}
+
+class IncomeStatement {
+    UUID id
+    UUID report_id
+    Decimal revenue
+    Decimal net_income
+    Decimal eps_basic
+    Decimal eps_diluted
+}
+
+class CashFlowStatement {
+    UUID id
+    UUID report_id
+    Decimal cash_from_operations
+    Decimal capital_expenditures
+    Decimal free_cash_flow
+}
+
+Security "1" --> "*" FinancialReport
+FinancialReport "1" --> "1" BalanceSheet
+FinancialReport "1" --> "1" IncomeStatement
+FinancialReport "1" --> "1" CashFlowStatement
+
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark"
+});
+</script>
+
+</body>
+</html>

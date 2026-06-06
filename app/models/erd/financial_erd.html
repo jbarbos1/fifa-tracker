@@ -1,0 +1,315 @@
+
+<style>
+#erd { padding: 1rem 0; }
+#erd svg { width: 100%; height: auto; }
+.section-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin: 1.5rem 0 0.4rem; }
+</style>
+
+<div id="erd-loading" style="color:var(--color-text-secondary);font-size:13px;padding:1rem 0;">Rendering schema…</div>
+<div id="erd"></div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '12px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#1a2436' : '#E6F1FB',
+    primaryBorderColor: dark ? '#185FA5' : '#378ADD',
+    secondaryColor: dark ? '#1a2d1a' : '#EAF3DE',
+    tertiaryColor: dark ? '#2a1f10' : '#FAEEDA',
+  },
+});
+
+const diagram = `erDiagram
+  SECURITY {
+    uuid id PK
+    string ticker
+    string name
+    string exchange
+    string sector
+    string industry
+    string security_type
+    date ipo_date
+    boolean is_active
+  }
+
+  FINANCIAL_REPORT {
+    uuid id PK
+    uuid security_id FK
+    string report_type
+    date period_end
+    date filed_date
+    string fiscal_year
+    string fiscal_quarter
+    string source_url
+  }
+
+  BALANCE_SHEET {
+    uuid id PK
+    uuid report_id FK
+    bigint total_assets
+    bigint total_liabilities
+    bigint total_equity
+    bigint cash_equivalents
+    bigint short_term_investments
+    bigint accounts_receivable
+    bigint inventory
+    bigint current_assets
+    bigint current_liabilities
+    bigint long_term_debt
+    bigint goodwill
+    bigint intangible_assets
+    bigint retained_earnings
+  }
+
+  INCOME_STATEMENT {
+    uuid id PK
+    uuid report_id FK
+    bigint revenue
+    bigint cost_of_goods_sold
+    bigint gross_profit
+    bigint operating_expenses
+    bigint ebit
+    bigint interest_expense
+    bigint ebt
+    bigint tax_expense
+    bigint net_income
+    bigint shares_outstanding
+    decimal eps_basic
+    decimal eps_diluted
+  }
+
+  CASH_FLOW_STATEMENT {
+    uuid id PK
+    uuid report_id FK
+    bigint cfo
+    bigint capex
+    bigint free_cash_flow
+    bigint cfi
+    bigint cff
+    bigint dividends_paid
+    bigint net_change_in_cash
+  }
+
+  PRICE_HISTORY {
+    uuid id PK
+    uuid security_id FK
+    date price_date
+    decimal open
+    decimal high
+    decimal low
+    decimal close
+    decimal adj_close
+    bigint volume
+  }
+
+  MOVING_AVERAGE {
+    uuid id PK
+    uuid security_id FK
+    date calc_date
+    int window_days
+    decimal sma
+    decimal ema
+    decimal vwap
+  }
+
+  INTRINSIC_VALUE {
+    uuid id PK
+    uuid security_id FK
+    date calc_date
+    string model_type
+    decimal book_value_per_share
+    decimal ncav_per_share
+    decimal graham_number
+    decimal dcf_value
+    decimal eps_10yr_avg
+    decimal discount_rate
+    decimal margin_of_safety_pct
+    decimal intrinsic_value
+  }
+
+  VALUATION_RATIO {
+    uuid id PK
+    uuid security_id FK
+    date calc_date
+    decimal pe_ratio
+    decimal pb_ratio
+    decimal ps_ratio
+    decimal peg_ratio
+    decimal ev_ebitda
+    decimal debt_to_equity
+    decimal current_ratio
+    decimal quick_ratio
+    decimal roe
+    decimal roa
+    decimal roic
+  }
+
+  PORTFOLIO {
+    uuid id PK
+    string name
+    string description
+    date created_date
+    decimal cash_balance
+  }
+
+  HOLDING {
+    uuid id PK
+    uuid portfolio_id FK
+    uuid security_id FK
+    date purchase_date
+    decimal purchase_price
+    int shares
+    decimal cost_basis
+    string notes
+  }
+
+  WATCHLIST {
+    uuid id PK
+    uuid security_id FK
+    decimal target_price
+    decimal max_acceptable_pe
+    decimal min_margin_of_safety
+    string graham_criteria_notes
+    date added_date
+  }
+
+  SIMULATION_RUN {
+    uuid id PK
+    uuid security_id FK
+    date run_date
+    string sim_type
+    int iterations
+    decimal time_horizon_yrs
+    decimal mu_return
+    decimal sigma_volatility
+  }
+
+  SIMULATION_RESULT {
+    uuid id PK
+    uuid run_id FK
+    decimal p10_outcome
+    decimal p25_outcome
+    decimal p50_outcome
+    decimal p75_outcome
+    decimal p90_outcome
+    decimal mean_outcome
+    decimal prob_positive_return
+    decimal prob_beats_benchmark
+    json percentile_distribution
+  }
+
+  PROJECT_CASHFLOW {
+    uuid id PK
+    string project_name
+    string description
+    date start_date
+    decimal initial_investment
+    decimal discount_rate
+    decimal wacc
+  }
+
+  CASHFLOW_PERIOD {
+    uuid id PK
+    uuid project_id FK
+    int period_number
+    string period_label
+    decimal cash_inflow
+    decimal cash_outflow
+    decimal net_cashflow
+    decimal pv_factor
+    decimal present_value
+  }
+
+  PROJECT_METRICS {
+    uuid id PK
+    uuid project_id FK
+    decimal npv
+    decimal irr
+    decimal mirr
+    decimal payback_period
+    decimal profitability_index
+    decimal roi_pct
+  }
+
+  LOAN {
+    uuid id PK
+    string loan_name
+    decimal principal
+    decimal annual_rate
+    int term_months
+    string amort_type
+    date origination_date
+    decimal balloon_payment
+  }
+
+  LOAN_AMORTIZATION {
+    uuid id PK
+    uuid loan_id FK
+    int payment_number
+    date payment_date
+    decimal payment_amount
+    decimal principal_portion
+    decimal interest_portion
+    decimal remaining_balance
+  }
+
+  SECURITY ||--o{ FINANCIAL_REPORT : "files"
+  FINANCIAL_REPORT ||--|| BALANCE_SHEET : "contains"
+  FINANCIAL_REPORT ||--|| INCOME_STATEMENT : "contains"
+  FINANCIAL_REPORT ||--|| CASH_FLOW_STATEMENT : "contains"
+  SECURITY ||--o{ PRICE_HISTORY : "has"
+  SECURITY ||--o{ MOVING_AVERAGE : "computed for"
+  SECURITY ||--o{ INTRINSIC_VALUE : "valued by"
+  SECURITY ||--o{ VALUATION_RATIO : "measured by"
+  SECURITY ||--o{ WATCHLIST : "tracked in"
+  SECURITY ||--o{ SIMULATION_RUN : "simulated"
+  SIMULATION_RUN ||--|| SIMULATION_RESULT : "produces"
+  PORTFOLIO ||--o{ HOLDING : "contains"
+  SECURITY ||--o{ HOLDING : "held as"
+  PROJECT_CASHFLOW ||--o{ CASHFLOW_PERIOD : "has periods"
+  PROJECT_CASHFLOW ||--|| PROJECT_METRICS : "derives"
+  LOAN ||--o{ LOAN_AMORTIZATION : "amortizes into"
+`;
+
+try {
+  const { svg } = await mermaid.render('erd-svg', diagram);
+  document.getElementById('erd').innerHTML = svg;
+  document.getElementById('erd-loading').style.display = 'none';
+
+  document.querySelectorAll('#erd svg .node').forEach(node => {
+    const firstPath = node.querySelector('path[d]');
+    if (!firstPath) return;
+    const d = firstPath.getAttribute('d');
+    const nums = d.match(/-?[\d.]+/g)?.map(Number);
+    if (!nums || nums.length < 8) return;
+    const xs = [nums[0], nums[2], nums[4], nums[6]];
+    const ys = [nums[1], nums[3], nums[5], nums[7]];
+    const x = Math.min(...xs), y = Math.min(...ys);
+    const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', w); rect.setAttribute('height', h);
+    rect.setAttribute('rx', '8');
+    for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+      if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+    }
+    firstPath.replaceWith(rect);
+  });
+
+  document.querySelectorAll('#erd svg .row-rect-odd path, #erd svg .row-rect-even path').forEach(p => {
+    p.setAttribute('stroke', 'none');
+  });
+} catch(e) {
+  document.getElementById('erd-loading').textContent = 'Schema rendered above.';
+}
+</script>

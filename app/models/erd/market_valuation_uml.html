@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Market + Valuation UML Diagram</title>
+
+<style>
+body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.mermaid {
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Market & Valuation</h1>
+
+<div class="mermaid">
+
+classDiagram
+
+class Security {
+    UUID id
+    string ticker
+    string name
+}
+
+class PriceHistory {
+    UUID id
+    UUID security_id
+    date price_date
+    Decimal open
+    Decimal high
+    Decimal low
+    Decimal close
+    Decimal adj_close
+}
+
+class MovingAverage {
+    UUID id
+    UUID security_id
+    date calc_date
+    int window_days
+    Decimal sma
+    Decimal ema
+    Decimal vwap
+}
+
+class IntrinsicValue {
+    UUID id
+    UUID security_id
+    date calc_date
+    Decimal graham_number
+    Decimal dcf_value
+    Decimal intrinsic_value
+    Decimal margin_of_safety_pct
+}
+
+class ValuationRatio {
+    UUID id
+    UUID security_id
+    date calc_date
+    Decimal pe_ratio
+    Decimal pb_ratio
+    Decimal debt_to_equity
+    Decimal roe
+}
+
+Security "1" --> "*" PriceHistory
+Security "1" --> "*" MovingAverage
+Security "1" --> "*" IntrinsicValue
+Security "1" --> "*" ValuationRatio
+
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark"
+});
+</script>
+
+</body>
+</html>

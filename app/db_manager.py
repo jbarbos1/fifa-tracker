@@ -19,7 +19,7 @@ class DBManager:
     def execute_transaction(operations_callback):
         """Executes a sequence of db ops within a strict transaction block. Ensures all ines process prior to committing. """
         try:
-            # Execute businesss logic passed into manager
+            # Execute business logic passed into manager
             result = operations_callback(db.session)
 
             db.session.commit()

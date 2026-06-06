@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Portfolio and Decision UML</title>
+
+<style>
+body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.mermaid {
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Portfolio & Decision</h1>
+
+<div class="mermaid">
+
+classDiagram
+
+class Portfolio {
+    UUID id
+    string name
+    Decimal cash_balance
+}
+
+class Holding {
+    UUID id
+    UUID portfolio_id
+    UUID security_id
+    date purchase_date
+    Decimal purchase_price
+    int shares
+    Decimal cost_basis
+}
+
+class Watchlist {
+    UUID id
+    UUID security_id
+    Decimal target_buy_price
+    Decimal min_margin_of_safety
+}
+
+class Security {
+    UUID id
+    string ticker
+    string name
+}
+
+Portfolio "1" --> "*" Holding
+Security "1" --> "*" Holding
+Security "1" --> "*" Watchlist
+
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark"
+});
+</script>
+
+</body>
+</html>

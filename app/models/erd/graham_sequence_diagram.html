@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graham Valuation System — UML Sequence Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --border:   #30363d;
+    --text:     #e6edf3;
+    --muted:    #7d8590;
+    --accent:   #58a6ff;
+
+    --c-gray:   #6e7681;
+    --c-blue:   #388bfd;
+    --c-teal:   #26a69a;
+    --c-purple: #8957e5;
+    --c-amber:  #d29922;
+    --c-red:    #e05252;
+
+    --lh-client:    160px;
+    --lh-security:  310px;
+    --lh-report:    460px;
+    --lh-stmt:      610px;
+    --lh-price:     760px;
+    --lh-computed:  910px;
+    --lh-portfolio: 1060px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    background: #1f2937;
+    color: var(--accent);
+    border: 1px solid #253347;
+    margin-top: 6px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch {
+    width: 28px; height: 2px; border-radius: 1px;
+  }
+  .legend-swatch.sync  { background: var(--accent); }
+  .legend-swatch.ret   { background: var(--muted); border-top: 2px dashed var(--muted); height: 0; }
+  .legend-swatch.async { background: var(--c-amber); border-top: 2px dashed var(--c-amber); height: 0; }
+  .legend-circle { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── DIAGRAM CANVAS ── */
+  .canvas-wrap {
+    overflow-x: auto;
+    padding: 0 24px 48px;
+  }
+
+  svg#diagram {
+    display: block;
+    margin: 0 auto;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  /* ── participant boxes ── */
+  .actor-box rect  { rx: 6; }
+  .actor-box text  { font-size: 11px; font-weight: 600; }
+  .actor-label     { font-size: 10px; fill: var(--muted); }
+
+  /* ── lifelines ── */
+  .lifeline { stroke-dasharray: 6 4; stroke-width: 1; opacity: 0.5; }
+
+  /* ── activation bars ── */
+  .activation { opacity: 0.85; }
+
+  /* ── arrows ── */
+  .msg-sync  { stroke: var(--c-blue); stroke-width: 1.5; fill: none; }
+  .msg-ret   { stroke: var(--muted);  stroke-width: 1;   fill: none; stroke-dasharray: 5 3; }
+  .msg-async { stroke: var(--c-amber);stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+  .msg-self  { stroke: var(--c-teal); stroke-width: 1.5; fill: none; }
+
+  /* ── labels ── */
+  .msg-label      { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; fill: var(--text); }
+  .msg-label-ret  { font-family: 'JetBrains Mono', monospace; font-size: 10px;   fill: var(--muted); }
+  .msg-label-async{ font-family: 'JetBrains Mono', monospace; font-size: 10px;   fill: var(--c-amber); }
+  .seq-num  {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    fill: var(--bg);
+    font-weight: 600;
+  }
+  .seq-circle { fill: var(--c-blue); }
+  .seq-circle-ret   { fill: var(--muted); }
+  .seq-circle-async { fill: var(--c-amber); }
+
+  /* ── section bands ── */
+  .section-band { opacity: 0.06; }
+  .section-label-txt {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--muted);
+  }
+
+  /* ── notes ── */
+  .note-box { fill: #1c2230; stroke: #30363d; stroke-width: 1; }
+  .note-text { font-size: 10px; fill: var(--muted); font-family: 'IBM Plex Sans', sans-serif; }
+
+  /* annotation table below */
+  .annot-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 40px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+  .annot-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .annot-card h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .annot-card p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .annot-card code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    background: #1c2a1c;
+    color: #7ee787;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .num-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--c-blue);
+    color: var(--bg);
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .num-badge.ret   { background: var(--muted); }
+  .num-badge.async { background: var(--c-amber); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 40px;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Graham Valuation System — UML Sequence Diagram</h1>
+    <p>Flask + SQLAlchemy · Service-layer data flow from raw ingestion → computed Graham valuation → portfolio/watchlist</p>
+    <span class="badge">app/services/ → SQLAlchemy models</span>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch sync"></div> Synchronous call</div>
+    <div class="legend-item"><div class="legend-swatch ret"></div> Return value</div>
+    <div class="legend-item"><div class="legend-swatch async"></div> Background / scheduled</div>
+    <div class="legend-item"><div class="legend-circle" style="background:var(--c-gray)"></div> Ingestion</div>
+    <div class="legend-item"><div class="legend-circle" style="background:var(--c-blue)"></div> Core entity</div>
+    <div class="legend-item"><div class="legend-circle" style="background:var(--c-teal)"></div> Computed</div>
+    <div class="legend-item"><div class="legend-circle" style="background:var(--c-purple)"></div> Portfolio</div>
+  </div>
+</header>
+
+<div class="canvas-wrap">
+<!--
+  LIFELINE X POSITIONS (center of activation bar)
+    Client / Route       : x=90
+    SecurityService      : x=240
+    ReportService        : x=390
+    StatementService     : x=540
+    MarketService        : x=690
+    ValuationService     : x=840
+    PortfolioService     : x=990
+    DB / SQLAlchemy      : x=1120
+-->
+<svg id="diagram" viewBox="0 0 1220 1780" width="1220" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- arrowheads -->
+  <marker id="arr-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0 0L10 5L0 10Z" fill="#388bfd"/>
+  </marker>
+  <marker id="arr-ret" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0 0L10 5L0 10Z" fill="#7d8590"/>
+  </marker>
+  <marker id="arr-async" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0 0L10 5L0 10Z" fill="#d29922"/>
+  </marker>
+  <marker id="arr-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0 0L10 5L0 10Z" fill="#26a69a"/>
+  </marker>
+  <marker id="arr-sync-rev" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M10 0L0 5L10 10Z" fill="#388bfd"/>
+  </marker>
+</defs>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SECTION BANDS                                  -->
+<!-- ══════════════════════════════════════════════ -->
+<rect class="section-band" x="0" y="120" width="1220" height="220" fill="#388bfd"/>
+<rect class="section-band" x="0" y="340" width="1220" height="200" fill="#388bfd"/>
+<rect class="section-band" x="0" y="540" width="1220" height="300" fill="#26d4c8"/>
+<rect class="section-band" x="0" y="840" width="1220" height="220" fill="#388bfd"/>
+<rect class="section-band" x="0" y="1060" width="1220" height="260" fill="#26d4c8"/>
+<rect class="section-band" x="0" y="1320" width="1220" height="240" fill="#e8a600"/>
+<rect class="section-band" x="0" y="1560" width="1220" height="200" fill="#8957e5"/>
+
+<text class="section-label-txt" x="8" y="138">1. Security registration</text>
+<text class="section-label-txt" x="8" y="358">2. Financial report ingestion</text>
+<text class="section-label-txt" x="8" y="558">3. Statement parsing</text>
+<text class="section-label-txt" x="8" y="858">4. Price &amp; moving averages</text>
+<text class="section-label-txt" x="8" y="1078">5. Graham valuation computation</text>
+<text class="section-label-txt" x="8" y="1338">6. Monte Carlo simulation</text>
+<text class="section-label-txt" x="8" y="1578">7. Portfolio / watchlist</text>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- PARTICIPANT BOXES (top)                        -->
+<!-- ══════════════════════════════════════════════ -->
+
+<!-- Client / Route -->
+<g class="actor-box">
+  <rect x="30" y="10" width="120" height="50" rx="6" fill="#1a1f2e" stroke="#6e7681" stroke-width="1.5"/>
+  <text x="90" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">Client</text>
+  <text x="90" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">Flask route / CLI</text>
+</g>
+
+<!-- SecurityService -->
+<g class="actor-box">
+  <rect x="180" y="10" width="120" height="50" rx="6" fill="#162032" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="240" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">SecurityService</text>
+  <text x="240" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">services/security.py</text>
+</g>
+
+<!-- ReportService -->
+<g class="actor-box">
+  <rect x="330" y="10" width="120" height="50" rx="6" fill="#162032" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="390" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">ReportService</text>
+  <text x="390" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">services/report.py</text>
+</g>
+
+<!-- StatementService -->
+<g class="actor-box">
+  <rect x="480" y="10" width="120" height="50" rx="6" fill="#162032" stroke="#26a69a" stroke-width="1.5"/>
+  <text x="540" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">StatementService</text>
+  <text x="540" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">services/statements.py</text>
+</g>
+
+<!-- MarketService -->
+<g class="actor-box">
+  <rect x="630" y="10" width="120" height="50" rx="6" fill="#162032" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="690" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">MarketService</text>
+  <text x="690" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">services/market.py</text>
+</g>
+
+<!-- ValuationService -->
+<g class="actor-box">
+  <rect x="780" y="10" width="120" height="50" rx="6" fill="#0f2420" stroke="#26a69a" stroke-width="1.5"/>
+  <text x="840" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">ValuationService</text>
+  <text x="840" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">services/valuation.py</text>
+</g>
+
+<!-- PortfolioService -->
+<g class="actor-box">
+  <rect x="930" y="10" width="120" height="50" rx="6" fill="#1a1230" stroke="#8957e5" stroke-width="1.5"/>
+  <text x="990" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">PortfolioService</text>
+  <text x="990" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">services/portfolio.py</text>
+</g>
+
+<!-- DB -->
+<g class="actor-box">
+  <rect x="1080" y="10" width="120" height="50" rx="6" fill="#1a1a1a" stroke="#6e7681" stroke-width="1.5"/>
+  <text x="1140" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#e6edf3">DB</text>
+  <text x="1140" y="47" text-anchor="middle" font-size="9.5" fill="#7d8590">SQLAlchemy / Postgres</text>
+</g>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- LIFELINES                                      -->
+<!-- ══════════════════════════════════════════════ -->
+<line class="lifeline" x1="90"   y1="60" x2="90"   y2="1770" stroke="#6e7681"/>
+<line class="lifeline" x1="240"  y1="60" x2="240"  y2="1770" stroke="#388bfd"/>
+<line class="lifeline" x1="390"  y1="60" x2="390"  y2="1770" stroke="#388bfd"/>
+<line class="lifeline" x1="540"  y1="60" x2="540"  y2="1770" stroke="#26a69a"/>
+<line class="lifeline" x1="690"  y1="60" x2="690"  y2="1770" stroke="#388bfd"/>
+<line class="lifeline" x1="840"  y1="60" x2="840"  y2="1770" stroke="#26a69a"/>
+<line class="lifeline" x1="990"  y1="60" x2="990"  y2="1770" stroke="#8957e5"/>
+<line class="lifeline" x1="1140" y1="60" x2="1140" y2="1770" stroke="#6e7681"/>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 1: Security registration  y=120–340           -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<!-- Activation bars -->
+<rect class="activation" x="84"  y="130" width="12" height="200" rx="2" fill="#6e7681"/>
+<rect class="activation" x="234" y="140" width="12" height="170" rx="2" fill="#388bfd"/>
+<rect class="activation" x="1134" y="160" width="12" height="130" rx="2" fill="#6e7681"/>
+
+<!-- 1: Client → SecurityService : register_security(ticker) -->
+<line x1="96" y1="155" x2="233" y2="155" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="155" r="8"/>
+<text class="seq-num" x="106" y="158" text-anchor="middle">1</text>
+<text class="msg-label" x="160" y="149">register_security(ticker, exchange)</text>
+
+<!-- 2: SecurityService → DB : session.add(Security) -->
+<line x1="246" y1="175" x2="1133" y2="175" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="256" cy="175" r="8"/>
+<text class="seq-num" x="256" y="178" text-anchor="middle">2</text>
+<text class="msg-label" x="680" y="169">session.add(Security(...))</text>
+
+<!-- 3: DB → SecurityService : security.id (UUID) -->
+<line x1="1133" y1="200" x2="247" y2="200" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="1123" cy="200" r="8"/>
+<text class="seq-num" x="1123" y="203" text-anchor="middle">3</text>
+<text class="msg-label-ret" x="680" y="194">security.id (UUID)</text>
+
+<!-- 4: SecurityService → DB : log_ingestion(security_id, source) -->
+<line x1="246" y1="225" x2="1133" y2="225" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="256" cy="225" r="8"/>
+<text class="seq-num" x="256" y="228" text-anchor="middle">4</text>
+<text class="msg-label" x="680" y="219">DataIngestionLog(security_id, status='ok')</text>
+
+<!-- 5: SecurityService → Client : Security -->
+<line x1="234" y1="255" x2="97" y2="255" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="224" cy="255" r="8"/>
+<text class="seq-num" x="224" y="258" text-anchor="middle">5</text>
+<text class="msg-label-ret" x="160" y="249">Security object</text>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 2: Financial report ingestion  y=340–540      -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<rect class="activation" x="84"  y="360" width="12" height="160" rx="2" fill="#6e7681"/>
+<rect class="activation" x="384" y="370" width="12" height="130" rx="2" fill="#388bfd"/>
+<rect class="activation" x="1134" y="380" width="12" height="100" rx="2" fill="#6e7681"/>
+
+<!-- 6: Client → ReportService -->
+<line x1="96" y1="385" x2="383" y2="385" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="385" r="8"/>
+<text class="seq-num" x="106" y="388" text-anchor="middle">6</text>
+<text class="msg-label" x="240" y="379">ingest_report(security_id, report_type, period_end, source_url)</text>
+
+<!-- 7: ReportService → DB : FinancialReport -->
+<line x1="396" y1="410" x2="1133" y2="410" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="406" cy="410" r="8"/>
+<text class="seq-num" x="406" y="413" text-anchor="middle">7</text>
+<text class="msg-label" x="760" y="404">session.add(FinancialReport(security_id, report_type, period_end))</text>
+
+<!-- 8: DB → ReportService : report.id -->
+<line x1="1133" y1="435" x2="397" y2="435" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="1123" cy="435" r="8"/>
+<text class="seq-num" x="1123" y="438" text-anchor="middle">8</text>
+<text class="msg-label-ret" x="760" y="429">report.id (UUID)</text>
+
+<!-- 9: ReportService → Client -->
+<line x1="384" y1="460" x2="97" y2="460" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="374" cy="460" r="8"/>
+<text class="seq-num" x="374" y="463" text-anchor="middle">9</text>
+<text class="msg-label-ret" x="240" y="454">FinancialReport object</text>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 3: Statement parsing  y=540–840               -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<rect class="activation" x="84"  y="560" width="12" height="260" rx="2" fill="#6e7681"/>
+<rect class="activation" x="534" y="570" width="12" height="240" rx="2" fill="#26a69a"/>
+<rect class="activation" x="1134" y="580" width="12" height="210" rx="2" fill="#6e7681"/>
+
+<!-- 10: Client → StatementService -->
+<line x1="96" y1="585" x2="533" y2="585" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="585" r="8"/>
+<text class="seq-num" x="106" y="588" text-anchor="middle">10</text>
+<text class="msg-label" x="320" y="579">parse_statements(report_id, raw_data)</text>
+
+<!-- 11: StatementService → DB : BalanceSheet -->
+<line x1="546" y1="615" x2="1133" y2="615" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="556" cy="615" r="8"/>
+<text class="seq-num" x="556" y="618" text-anchor="middle">11</text>
+<text class="msg-label" x="840" y="609">session.add(BalanceSheet(report_id, total_assets, ...))</text>
+
+<!-- 12: StatementService → DB : IncomeStatement -->
+<line x1="546" y1="660" x2="1133" y2="660" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="556" cy="660" r="8"/>
+<text class="seq-num" x="556" y="663" text-anchor="middle">12</text>
+<text class="msg-label" x="840" y="654">session.add(IncomeStatement(report_id, eps_basic, eps_diluted, ...))</text>
+
+<!-- 13: StatementService → DB : CashFlowStatement -->
+<line x1="546" y1="705" x2="1133" y2="705" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="556" cy="705" r="8"/>
+<text class="seq-num" x="556" y="708" text-anchor="middle">13</text>
+<text class="msg-label" x="840" y="699">session.add(CashFlowStatement(report_id, cfo, capex, ...))</text>
+
+<!-- 14: DB → StatementService : commit ok -->
+<line x1="1133" y1="740" x2="547" y2="740" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="1123" cy="740" r="8"/>
+<text class="seq-num" x="1123" y="743" text-anchor="middle">14</text>
+<text class="msg-label-ret" x="840" y="734">session.commit() → ok</text>
+
+<!-- 15: StatementService → Client -->
+<line x1="534" y1="775" x2="97" y2="775" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="524" cy="775" r="8"/>
+<text class="seq-num" x="524" y="778" text-anchor="middle">15</text>
+<text class="msg-label-ret" x="320" y="769">{ balance_sheet, income_stmt, cashflow }</text>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 4: Price & moving averages  y=840–1060        -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<rect class="activation" x="84"  y="860" width="12" height="180" rx="2" fill="#6e7681"/>
+<rect class="activation" x="684" y="870" width="12" height="150" rx="2" fill="#388bfd"/>
+<rect class="activation" x="1134" y="880" width="12" height="120" rx="2" fill="#6e7681"/>
+
+<!-- 16: Client → MarketService (async scheduled) -->
+<line x1="96" y1="885" x2="683" y2="885" class="msg-async" marker-end="url(#arr-async)"/>
+<circle class="seq-circle-async" cx="106" cy="885" r="8"/>
+<text class="seq-num" x="106" y="888" text-anchor="middle">16</text>
+<text class="msg-label-async" x="390" y="879">ingest_prices(security_id, ohlcv_rows)  ← scheduler job</text>
+
+<!-- 17: MarketService → DB : bulk insert PriceHistory -->
+<line x1="696" y1="915" x2="1133" y2="915" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="706" cy="915" r="8"/>
+<text class="seq-num" x="706" y="918" text-anchor="middle">17</text>
+<text class="msg-label" x="910" y="909">session.bulk_save_objects([PriceHistory(...)])</text>
+
+<!-- 18: MarketService → DB : compute_moving_averages() -->
+<line x1="696" y1="955" x2="1133" y2="955" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="706" cy="955" r="8"/>
+<text class="seq-num" x="706" y="958" text-anchor="middle">18</text>
+<text class="msg-label" x="910" y="949">MovingAverage(security_id, calc_date, window_days=20/50/200)</text>
+
+<!-- 19: DB → MarketService -->
+<line x1="1133" y1="985" x2="697" y2="985" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="1123" cy="985" r="8"/>
+<text class="seq-num" x="1123" y="988" text-anchor="middle">19</text>
+<text class="msg-label-ret" x="910" y="979">rows committed</text>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 5: Graham valuation  y=1060–1320              -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<rect class="activation" x="84"   y="1080" width="12" height="220" rx="2" fill="#6e7681"/>
+<rect class="activation" x="834"  y="1090" width="12" height="200" rx="2" fill="#26a69a"/>
+<rect class="activation" x="1134" y="1100" width="12" height="160" rx="2" fill="#6e7681"/>
+
+<!-- 20: Client → ValuationService -->
+<line x1="96" y1="1105" x2="833" y2="1105" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="1105" r="8"/>
+<text class="seq-num" x="106" y="1108" text-anchor="middle">20</text>
+<text class="msg-label" x="465" y="1099">compute_graham_valuation(security_id, calc_date)</text>
+
+<!-- 21: ValuationService → DB : query IncomeStatement (10yr EPS) -->
+<line x1="846" y1="1135" x2="1133" y2="1135" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="856" cy="1135" r="8"/>
+<text class="seq-num" x="856" y="1138" text-anchor="middle">21</text>
+<text class="msg-label" x="990" y="1129">query IncomeStatement → 10yr eps_basic avg</text>
+
+<!-- 22: ValuationService → DB : query BalanceSheet (BVPS) -->
+<line x1="846" y1="1170" x2="1133" y2="1170" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="856" cy="1170" r="8"/>
+<text class="seq-num" x="856" y="1173" text-anchor="middle">22</text>
+<text class="msg-label" x="990" y="1164">query BalanceSheet → total_equity / shares → BVPS</text>
+
+<!-- 23: ValuationService self: compute graham_number = sqrt(22.5 * eps * bvps) -->
+<!-- Self-call loop on ValuationService -->
+<path d="M846 1205 Q900 1205 900 1220 Q900 1235 846 1235" class="msg-self" marker-end="url(#arr-teal)" fill="none"/>
+<circle cx="856" cy="1205" r="8" fill="#26a69a"/>
+<text class="seq-num" x="856" y="1208" text-anchor="middle">23</text>
+<text class="msg-label" x="910" y="1215" fill="#26a69a" font-family="'JetBrains Mono',monospace" font-size="10">√(22.5 × eps_10yr × bvps)  ncav = curr_assets − total_liab</text>
+
+<!-- 24: ValuationService → DB : IntrinsicValue + ValuationRatio -->
+<line x1="846" y1="1258" x2="1133" y2="1258" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="856" cy="1258" r="8"/>
+<text class="seq-num" x="856" y="1261" text-anchor="middle">24</text>
+<text class="msg-label" x="990" y="1252">session.add(IntrinsicValue(...))  session.add(ValuationRatio(...))</text>
+
+<!-- 25: ValuationService → Client -->
+<line x1="834" y1="1288" x2="97" y2="1288" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="824" cy="1288" r="8"/>
+<text class="seq-num" x="824" y="1291" text-anchor="middle">25</text>
+<text class="msg-label-ret" x="465" y="1282">{ graham_number, ncav_per_share, margin_of_safety_pct }</text>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 6: Monte Carlo simulation  y=1320–1560        -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<rect class="activation" x="84"  y="1340" width="12" height="200" rx="2" fill="#6e7681"/>
+<rect class="activation" x="684" y="1350" width="12" height="170" rx="2" fill="#388bfd"/>
+<rect class="activation" x="1134" y="1360" width="12" height="130" rx="2" fill="#6e7681"/>
+
+<!-- 26: Client → MarketService (sim run) -->
+<line x1="96" y1="1365" x2="683" y2="1365" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="1365" r="8"/>
+<text class="seq-num" x="106" y="1368" text-anchor="middle">26</text>
+<text class="msg-label" x="390" y="1359">run_simulation(security_id, mu, sigma, horizon, iterations, sim_type)</text>
+
+<!-- 27: MarketService → DB : SimulationRun -->
+<line x1="696" y1="1395" x2="1133" y2="1395" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="706" cy="1395" r="8"/>
+<text class="seq-num" x="706" y="1398" text-anchor="middle">27</text>
+<text class="msg-label" x="910" y="1389">session.add(SimulationRun(mu, sigma, iterations, sim_type))</text>
+
+<!-- 28: MarketService self: GBM / bootstrap iterations -->
+<path d="M696 1430 Q750 1430 750 1445 Q750 1460 696 1460" class="msg-self" marker-end="url(#arr-teal)" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="706" cy="1430" r="8" fill="#d29922"/>
+<text class="seq-num" x="706" y="1433" text-anchor="middle">28</text>
+<text x="760" y="1440" font-family="'JetBrains Mono',monospace" font-size="10" fill="#d29922">numpy GBM / historical bootstrap (n iterations)</text>
+
+<!-- 29: MarketService → DB : SimulationResult -->
+<line x1="696" y1="1480" x2="1133" y2="1480" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="706" cy="1480" r="8"/>
+<text class="seq-num" x="706" y="1483" text-anchor="middle">29</text>
+<text class="msg-label" x="910" y="1474">session.add(SimulationResult(p10…p95, mean, prob_positive))</text>
+
+<!-- 30: MarketService → Client -->
+<line x1="684" y1="1515" x2="97" y2="1515" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="674" cy="1515" r="8"/>
+<text class="seq-num" x="674" y="1518" text-anchor="middle">30</text>
+<text class="msg-label-ret" x="390" y="1509">SimulationResult { percentile_distribution JSON }</text>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 7: Portfolio / Watchlist  y=1560–1760         -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+<rect class="activation" x="84"  y="1580" width="12" height="180" rx="2" fill="#6e7681"/>
+<rect class="activation" x="984" y="1590" width="12" height="160" rx="2" fill="#8957e5"/>
+<rect class="activation" x="1134" y="1600" width="12" height="130" rx="2" fill="#6e7681"/>
+
+<!-- 31: Client → PortfolioService : add_holding -->
+<line x1="96" y1="1605" x2="983" y2="1605" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="1605" r="8"/>
+<text class="seq-num" x="106" y="1608" text-anchor="middle">31</text>
+<text class="msg-label" x="540" y="1599">add_holding(portfolio_id, security_id, shares, purchase_price)</text>
+
+<!-- 32: PortfolioService → DB : Holding -->
+<line x1="996" y1="1635" x2="1133" y2="1635" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="1006" cy="1635" r="8"/>
+<text class="seq-num" x="1006" y="1638" text-anchor="middle">32</text>
+<text class="msg-label" x="1065" y="1629">session.add(Holding(cost_basis=shares×price))</text>
+
+<!-- 33: Client → PortfolioService : watch_security -->
+<line x1="96" y1="1665" x2="983" y2="1665" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="106" cy="1665" r="8"/>
+<text class="seq-num" x="106" y="1668" text-anchor="middle">33</text>
+<text class="msg-label" x="540" y="1659">watch_security(security_id, max_pe, min_margin_of_safety)</text>
+
+<!-- 34: PortfolioService → DB : Watchlist + screen query -->
+<line x1="996" y1="1695" x2="1133" y2="1695" class="msg-sync" marker-end="url(#arr-sync)"/>
+<circle class="seq-circle" cx="1006" cy="1695" r="8"/>
+<text class="seq-num" x="1006" y="1698" text-anchor="middle">34</text>
+<text class="msg-label" x="1065" y="1689">session.add(Watchlist(...)) → query IntrinsicValue</text>
+
+<!-- 35: DB → PortfolioService : passes_graham_screen -->
+<line x1="1133" y1="1725" x2="997" y2="1725" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="1123" cy="1725" r="8"/>
+<text class="seq-num" x="1123" y="1728" text-anchor="middle">35</text>
+<text class="msg-label-ret" x="1065" y="1719">passes_graham_screen → bool</text>
+
+<!-- 36: PortfolioService → Client -->
+<line x1="984" y1="1755" x2="97" y2="1755" class="msg-ret" marker-end="url(#arr-ret)"/>
+<circle class="seq-circle-ret" cx="974" cy="1755" r="8"/>
+<text class="seq-num" x="974" y="1758" text-anchor="middle">36</text>
+<text class="msg-label-ret" x="540" y="1749">{ holding, watchlist_entry, passes_screen }</text>
+
+</svg>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- ANNOTATION TABLE                              -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="annot-wrap">
+
+  <div class="annot-card">
+    <h3><span class="num-badge">1</span> register_security(ticker, exchange)</h3>
+    <p>Entry point for adding a new ticker. Creates a <code>Security</code> row (UUID PK) and writes a <code>DataIngestionLog</code> record. All other services require a valid <code>security_id</code> from this step first.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3><span class="num-badge">6</span> ingest_report(security_id, report_type, period_end)</h3>
+    <p>Creates a <code>FinancialReport</code> row keyed by <code>(security_id, report_type, period_end)</code>. The returned <code>report.id</code> is the FK anchor for all three statement tables. <code>report_type</code> is <code>'10-K'</code> or <code>'10-Q'</code>.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3><span class="num-badge">10</span>–<span class="num-badge">14</span> parse_statements(report_id, raw_data)</h3>
+    <p>Three <code>session.add()</code> calls in a single transaction — <code>BalanceSheet</code>, <code>IncomeStatement</code>, <code>CashFlowStatement</code> — all FK'd to <code>report_id</code>. GAAP requires 1:1 per filing; a single <code>session.commit()</code> guarantees atomicity.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3><span class="num-badge async">16</span> ingest_prices() — scheduler job</h3>
+    <p>Async/scheduled call (dashed amber). <code>bulk_save_objects</code> on <code>PriceHistory</code>, then derives <code>MovingAverage</code> rows for <code>window_days ∈ {20, 50, 200}</code>. Unique constraint <code>(security_id, calc_date, window_days)</code> prevents duplicate windows.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3><span class="num-badge">20</span>–<span class="num-badge">25</span> compute_graham_valuation(security_id, calc_date)</h3>
+    <p>Queries <code>IncomeStatement</code> for 10-year EPS average and <code>BalanceSheet</code> for BVPS. Self-call <strong>23</strong> computes <code>graham_number = √(22.5 × eps_10yr × bvps)</code> and <code>ncav = current_assets − total_liabilities</code>. Persists <code>IntrinsicValue</code> + <code>ValuationRatio</code>.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3><span class="num-badge">26</span>–<span class="num-badge">30</span> run_simulation(mu, sigma, horizon, iterations)</h3>
+    <p>Creates a <code>SimulationRun</code> row, executes numpy GBM or historical bootstrap (self-call <strong>28</strong>, dashed amber = compute-heavy), then persists <code>SimulationResult</code> with full percentile distribution as JSON and <code>prob_positive_return</code>.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3><span class="num-badge">31</span>–<span class="num-badge">36</span> add_holding() + watch_security()</h3>
+    <p><code>add_holding</code> computes <code>cost_basis = shares × purchase_price</code> per lot. <code>watch_security</code> writes a <code>Watchlist</code> row with the user's Graham thresholds (<code>max_pe</code>, <code>min_margin_of_safety</code>) and immediately queries <code>IntrinsicValue</code> to return whether the stock currently passes the screen.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3>Data types: <code>Mapped[Decimal]</code> everywhere financial</h3>
+    <p>Use <code>Numeric(14,4)</code> for prices and ratios, <code>Numeric(20,0)</code> for balance-sheet dollar amounts, <code>Numeric(10,4)</code> for EPS. Map to Python <code>Decimal</code> (not <code>float</code>) to avoid IEEE-754 rounding errors in Graham math.</p>
+  </div>
+
+  <div class="annot-card">
+    <h3>Service layer pattern</h3>
+    <p>Each service file (<code>services/security.py</code>, <code>services/valuation.py</code>, etc.) takes <code>db.session</code> as a dependency. Routes call services; services call models. Never put <code>session.query()</code> directly in route handlers — this is the wu wei separation that keeps Flask routes thin.</p>
+  </div>
+
+</div>
+
+<footer>
+  <span>Graham Valuation System · Flask + SQLAlchemy 2.0 · PostgreSQL (Supabase)</span>
+  <span>Sequence diagram — UML reference for service class design</span>
+</footer>
+
+</body>
+</html>
