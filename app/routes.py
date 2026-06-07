@@ -4,6 +4,7 @@ from app import db
 from functools import wraps
 from app.forms import RegistrationForm, LoginForms, LeagueCreateForm
 from app.db_manager import DBManager
+from app.models import LeagueMember, League
 
 main = Blueprint('main', __name__)
 

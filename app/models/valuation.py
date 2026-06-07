@@ -1,5 +1,5 @@
 """
-valuation.py — Graham-principled intrinsic value and ratio tables.
+valuation_service.py — Graham-principled intrinsic value and ratio tables.
 
 IntrinsicValue: the computed Graham valuation snapshot per security per date.
   - graham_number:    sqrt(22.5 * EPS_10yr_avg * book_value_per_share)

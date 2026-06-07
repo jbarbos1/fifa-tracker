@@ -1,5 +1,5 @@
 """
-market.py — price history and computed moving averages.
+market_service.py — price history and computed moving averages.
 
 PriceHistory: raw OHLCV data, one row per trading day per security.
 MovingAverage: computed table — store multiple windows (20, 50, 200-day)

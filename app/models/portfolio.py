@@ -1,5 +1,5 @@
 """
-portfolio.py — portfolio, holdings (cost basis per lot), and watchlist.
+portfolio_service.py — portfolio, holdings (cost basis per lot), and watchlist.
 
 Watchlist stores your Graham screening thresholds per ticker so you can
 run a single query: "which watched stocks currently pass my criteria?"
